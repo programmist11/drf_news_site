@@ -1,10 +1,11 @@
-from rest_framework import serializers
-from .models import News, Account
-from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
-from django.core.mail import send_mail
-from django.conf import settings
 import random
+
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.core.mail import send_mail
+from rest_framework import serializers
+
+from .models import Account, News
 
 
 def generate_code():
@@ -65,11 +66,6 @@ class RegisterValidSerializer(serializers.Serializer):
 
     def save(self, **kwargs):
         pass
-
-
-
-
-
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):

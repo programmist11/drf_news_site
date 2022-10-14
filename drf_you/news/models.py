@@ -24,23 +24,27 @@ class Likes(models.Model):
 class Key_word(models.Model):
     title = models.CharField(max_length=30)
 
-    def __str__(self):
-        return self.title
-
     class Meta:
         verbose_name = "ключевое слово"
         verbose_name_plural = "Ключевые слова"
+
+    def __str__(self):
+        return self.title
+
+
 
 
 class Ip(models.Model):
     ip = models.CharField(max_length=100, )
 
-    def __str__(self):
-        return self.ip
-
     class Meta:
         verbose_name = "ip"
         verbose_name_plural = "ip"
+
+    def __str__(self):
+        return self.ip
+
+
 
 
 class News(models.Model):
@@ -64,22 +68,22 @@ class News(models.Model):
                                    blank=True)
     key_word = models.ManyToManyField(Key_word, blank=True)
 
-    def get_absolute_url(self):
-        return f'/{self.id}'
+    class Meta:
+        verbose_name = "Новость"
+        verbose_name_plural = "Новости"
+        ordering = ['-created_ad']
 
     def __str__(self):
         return self.title
+
+    def get_absolute_url(self):
+        return f'/{self.id}'
 
     def total_views(self):
         return self.views.count()
 
     def total_likes(self):
         return self.likes_set.count()
-
-    class Meta:
-        verbose_name = "Новость"
-        verbose_name_plural = "Новости"
-        ordering = ['-created_ad']
 
     def Контент(self, ):
         return self.content[:35]
@@ -107,11 +111,13 @@ class Review(models.Model):
     parent = models.ForeignKey(
         "self", on_delete=models.SET_NULL, verbose_name="Родитель", blank=True, null=True, related_name="children"
     )
-    news = models.ForeignKey(News, on_delete=models.CASCADE, verbose_name="новость", related_name="review")
-
-    def __str__(self):
-        return f"{self.name} - {self.news}"
+    news = models.ForeignKey(News, on_delete=models.CASCADE, verbose_name="Новость", related_name="review")
 
     class Meta:
         verbose_name = "Отзыв"
         verbose_name_plural = "Отзывы"
+
+    def __str__(self):
+        return f"{self.name} - {self.news}"
+
+

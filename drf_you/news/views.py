@@ -1,17 +1,16 @@
-from django.shortcuts import redirect
-from rest_framework.response import Response
-from .models import News, Category, Ip, Account
-from .permissions import IsOwnerOrReadOnly
-from .serializers import NewsSerializer, UserRegisterSerializer, UserSerializer, RegisterValidSerializer
-from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, permissions, generics, status
-from django.contrib.auth.models import User
-from rest_framework.permissions import AllowAny
 from django.contrib.auth import login, logout
-from rest_framework import serializers
+from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404, redirect
+from rest_framework import generics, permissions, serializers, viewsets
 from rest_framework.decorators import api_view
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+
+from .models import Account, Category, Ip, News
+from .permissions import IsOwnerOrReadOnly
+from .serializers import (NewsSerializer, RegisterValidSerializer,
+                          UserRegisterSerializer, UserSerializer)
 
 
 @api_view(['GET'])

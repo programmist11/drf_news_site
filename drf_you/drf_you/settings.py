@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
-from dotenv import load_dotenv, find_dotenv
 
+from dotenv import find_dotenv, load_dotenv
 
 load_dotenv(find_dotenv())
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,13 +20,13 @@ ALLOWED_HOSTS = [
 
 
 INSTALLED_APPS = [
-    "news",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "news",
     'rest_framework',
 ]
 
@@ -73,16 +73,20 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'NAME': 'django.contrib'
+                '.auth.password_validation.UserAttributeSimilarityValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'NAME': 'django.contrib'
+                '.auth.password_validation.MinimumLengthValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        'NAME': 'django.contrib'
+                '.auth.password_validation.CommonPasswordValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        'NAME': 'django.contrib'
+                '.auth.password_validation.NumericPasswordValidator',
     },
 ]
 
