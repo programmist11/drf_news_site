@@ -40,6 +40,7 @@ class RegisterAPIView(generics.CreateAPIView):
         data = {}
         if serializer.is_valid():
             user = serializer.save()
+
             login(request, user)
             return redirect(f'/validate/{user.id}')
         else:

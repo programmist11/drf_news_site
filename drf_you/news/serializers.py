@@ -1,11 +1,13 @@
 import random
-
+# from django.contrib.auth.password_validation import validate_password
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from rest_framework import serializers
-
+from django.core.exceptions import ValidationError
 from .models import Account, News
+from rest_framework.response import Response
+from .password_validation import validate_password
 
 
 def generate_code():
@@ -45,8 +47,8 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({email: "Пользователь с таким email уже существует"})
         if password != password2:
             raise serializers.ValidationError({password: "Пароль не совпадает"})
-        if len(password) < 8:
-            raise serializers.ValidationError({password: "Пароль должен быть больше 7 символов"})
+
+        validate_password(password)
         user = User(email=email, username=username)
         message = generate_code()
         send_mail('Код подтверждения',
