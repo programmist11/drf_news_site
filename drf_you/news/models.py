@@ -13,7 +13,6 @@ class Account(models.Model):
                                       verbose_name="Дата публикации")
 
 
-
 class Likes(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                              on_delete=models.CASCADE)
@@ -32,8 +31,6 @@ class Key_word(models.Model):
         return self.title
 
 
-
-
 class Ip(models.Model):
     ip = models.CharField(max_length=100, )
 
@@ -43,8 +40,6 @@ class Ip(models.Model):
 
     def __str__(self):
         return self.ip
-
-
 
 
 class News(models.Model):

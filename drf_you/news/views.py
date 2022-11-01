@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
 from .models import Account, Category, Ip, News
-from .permissions import IsOwnerOrReadOnly
+from .permissions import IsOwnerOrReadOnly, IsStaffOrReadOnly
 from .serializers import (NewsSerializer, RegisterValidSerializer,
                           UserRegisterSerializer, UserSerializer)
 
@@ -23,8 +23,7 @@ def api_root(request, format=None):
 class NewsViewSet(viewsets.ModelViewSet):
     queryset = News.objects.all()
     serializer_class = NewsSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly,
-                          IsOwnerOrReadOnly]
+    permission_classes = [IsStaffOrReadOnly, IsOwnerOrReadOnly]
 
     def perform_create(self, serializer):
         serializer.save(autor=self.request.user)

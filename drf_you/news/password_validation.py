@@ -14,7 +14,7 @@ def validate_password(password, user=None, password_validators=None):
         except ValidationError as error:
             errors.append(error)
     if errors:
-        raise serializers.ValidationError({password: errors})
+        raise serializers.ValidationError({"password": errors})
 
 
 
