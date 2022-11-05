@@ -1,16 +1,17 @@
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect
-from rest_framework import generics, permissions, serializers, viewsets
+from rest_framework import generics, permissions, serializers, viewsets, views
 from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-
+from django.db.models import Q
 from .models import Account, Category, Ip, News
 from .permissions import IsOwnerOrReadOnly, IsStaffOrReadOnly
 from .serializers import (NewsSerializer, RegisterValidSerializer,
-                          UserRegisterSerializer, UserSerializer)
+                          UserRegisterSerializer, UserSerializer,
+                          UserLoginSerializer)
 
 
 @api_view(['GET'])
@@ -77,10 +78,31 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAdminUser]
 
 
+class LoginAPIView(views.APIView):
+
+    def post(self, request):
+        serializer = UserLoginSerializer(data=request.data)
+
+        if serializer.is_valid():
+            username = serializer.validated_data.get("username")
+            password = serializer.validated_data.get("password")
+
+            user = User.objects.filter(Q(username=username) | Q(email=username)).first()
+            if user:
+                if not user.check_password(password):
+                    raise serializers.ValidationError({password: "Неверный пароль"})
+                else:
+                    login(request, user)
+                    return redirect("/")
+            raise serializers.ValidationError({username: "Неверное имя пользователя или пароль"})
 
 
+class LogoutAPIView(views.APIView):
+
+    def get(self, request):
+        logout(request)
+        return redirect("/")
 
 
-
-
-
+class ForgotPasswordAPIView(views.APIView):
+    pass

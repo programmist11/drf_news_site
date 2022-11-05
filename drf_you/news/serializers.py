@@ -66,11 +66,26 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 class RegisterValidSerializer(serializers.Serializer):
     code = serializers.CharField(max_length=5)
 
-    def save(self, **kwargs):
-        pass
-
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = User
         fields = ['url', 'username', 'email', 'groups']
+
+
+class UserLoginSerializer(serializers.Serializer):
+    password = serializers.CharField(
+        label="Пароль",
+        style={'input_type': 'password'}
+    )
+
+    username = serializers.CharField(
+        label="Имя пользователя",
+        max_length=20,
+    )
+
+
+
+
+
+
