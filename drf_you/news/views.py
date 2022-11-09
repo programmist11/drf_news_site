@@ -1,21 +1,23 @@
+import random
+
+from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.mail import send_mail
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
-from rest_framework import generics, permissions, serializers, viewsets, views
+from rest_framework import generics, permissions, serializers, views, viewsets
 from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from django.db.models import Q
+
 from .models import Account, Category, Ip, News
 from .permissions import ReadOnlyOrIsReconfirmed
-from .serializers import (NewsSerializer, RegisterEnterCodeSerializer,
-                          UserRegisterSerializer, UserSerializer,
-                          UserLoginSerializer, EmailSerializer)
-
-from django.core.mail import send_mail
-import random
-from django.conf import settings
+from .serializers import (EmailSerializer, NewsSerializer,
+                          RegisterEnterCodeSerializer, UserLoginSerializer,
+                          UserRegisterSerializer, UserSerializer)
 
 
 @api_view(['GET'])
@@ -87,9 +89,6 @@ class LogoutAPIView(views.APIView):
         return redirect("/")
 
 
-def generate_code():
-    random.seed()
-    return str(random.randint(10000, 99999))
 
 
 # class PasswordResetAPIView(views.APIView):
@@ -136,6 +135,7 @@ class LoginAPIView(generics.GenericAPIView):
 class PasswordResetAPIView(generics.GenericAPIView):
     serializer_class = EmailSerializer
     queryset = User.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         serializer = EmailSerializer(data=request.data)
@@ -143,14 +143,28 @@ class PasswordResetAPIView(generics.GenericAPIView):
             email = serializer.validated_data.get("email")
             user = User.objects.filter(email=email).first()
             if user:
-                message_code = generate_code()
-                send_mail('Код подтверждения',
-                          message_code,
-                          settings.EMAIL_HOST_USER,
-                          [email],
-                          fail_silently=False
-                          )
-                Account.objects.update(user=user, code=message_code)
+                message_code = send_code(email)
+                try:
+                    user.account.code = message_code
+                    user.account.save()
+                except ObjectDoesNotExist:
+                    Account.objects.create(user=user, code=message_code)
+
                 return redirect(f"/password_reset/{user.id}/enter_code")
             raise serializers.ValidationError({email: "неверная почта"})
 
+
+
+def send_code(email, massage='Код подтверждения'):
+    message_code = generate_code()
+    send_mail(massage,
+              message_code,
+              settings.EMAIL_HOST_USER,
+              [email],
+              fail_silently=False
+              )
+    return message_code
+
+def generate_code():
+    random.seed()
+    return str(random.randint(10000, 99999))

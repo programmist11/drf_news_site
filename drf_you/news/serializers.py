@@ -1,12 +1,11 @@
 import random
-# from django.contrib.auth.password_validation import validate_password
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from rest_framework import serializers
-from django.core.exceptions import ValidationError
+
 from .models import Account, News
-from rest_framework.response import Response
 from .password_validation import validate_password
 
 

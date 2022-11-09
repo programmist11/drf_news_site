@@ -1,4 +1,5 @@
-from django.contrib.auth.password_validation import get_default_password_validators
+from django.contrib.auth.password_validation import \
+    get_default_password_validators
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
