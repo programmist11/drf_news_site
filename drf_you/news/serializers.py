@@ -63,14 +63,14 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         return user
 
 
-class RegisterValidSerializer(serializers.Serializer):
+class RegisterEnterCodeSerializer(serializers.Serializer):
     code = serializers.CharField(max_length=5)
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = User
-        fields = ['url', 'username', 'email', 'groups']
+        fields = ['url', 'username', 'email', 'groups', 'is_staff', 'is_active', 'is_superuser']
 
 
 class UserLoginSerializer(serializers.Serializer):
@@ -85,6 +85,8 @@ class UserLoginSerializer(serializers.Serializer):
     )
 
 
+class EmailSerializer(serializers.Serializer):
+    email = serializers.EmailField()
 
 
 

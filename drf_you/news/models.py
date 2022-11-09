@@ -12,6 +12,8 @@ class Account(models.Model):
     created_at = models.DateTimeField(default=timezone.now,
                                       verbose_name="Дата публикации")
 
+    is_reconfirmed = models.BooleanField(default=False)
+
 
 class Likes(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL,

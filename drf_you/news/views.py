@@ -8,10 +8,14 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from django.db.models import Q
 from .models import Account, Category, Ip, News
-from .permissions import IsOwnerOrReadOnly, IsStaffOrReadOnly
-from .serializers import (NewsSerializer, RegisterValidSerializer,
+from .permissions import ReadOnlyOrIsReconfirmed
+from .serializers import (NewsSerializer, RegisterEnterCodeSerializer,
                           UserRegisterSerializer, UserSerializer,
-                          UserLoginSerializer)
+                          UserLoginSerializer, EmailSerializer)
+
+from django.core.mail import send_mail
+import random
+from django.conf import settings
 
 
 @api_view(['GET'])
@@ -24,7 +28,7 @@ def api_root(request, format=None):
 class NewsViewSet(viewsets.ModelViewSet):
     queryset = News.objects.all()
     serializer_class = NewsSerializer
-    permission_classes = [IsStaffOrReadOnly, IsOwnerOrReadOnly]
+    permission_classes = [ReadOnlyOrIsReconfirmed]
 
     def perform_create(self, serializer):
         serializer.save(autor=self.request.user)
@@ -42,28 +46,26 @@ class RegisterAPIView(generics.CreateAPIView):
             user = serializer.save()
 
             login(request, user)
-            return redirect(f'/validate/{user.id}')
+            return redirect(f"/register/{user.id}/enter_code")
         else:
             data = serializer.errors
             return Response(data)
 
 
-class RegisterValidateAPIView(generics.CreateAPIView):
-    serializer_class = RegisterValidSerializer
+class RegisterEnterCodeAPIView(generics.CreateAPIView):
+    serializer_class = RegisterEnterCodeSerializer
     queryset = User.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        data = {}
-        serializer = RegisterValidSerializer(data=request.data)
+        serializer = RegisterEnterCodeSerializer(data=request.data)
         if serializer.is_valid():
             code_response = serializer.validated_data.get("code")
             user_id = kwargs.get('user_id')
-            code_base = get_object_or_404(Account, user_id=user_id).code
-            if code_base == code_response:
-                user = User.objects.get(pk=user_id)
-                user.is_staff = True
-                user.save()
+            account = get_object_or_404(Account, user_id=user_id)
+            if account.code == code_response:
+                account.is_reconfirmed = True
+                account.save()
                 return redirect("/")
             else:
                 raise serializers.ValidationError({code_response: "неверный код"})
@@ -104,5 +106,49 @@ class LogoutAPIView(views.APIView):
         return redirect("/")
 
 
-class ForgotPasswordAPIView(views.APIView):
-    pass
+def generate_code():
+    random.seed()
+    return str(random.randint(10000, 99999))
+
+
+# class PasswordResetAPIView(views.APIView):
+#
+#     def post(self, request):
+#         serializer = EmailSerializer(data=request.data)
+#         if serializer.is_valid():
+#             email = serializer.validated_data.get("email")
+#             user = User.objects.filter(email=email).first()
+#             if user:
+#                 message_code = generate_code()
+#                 send_mail('Код подтверждения',
+#                           message_code,
+#                           settings.EMAIL_HOST_USER,
+#                           [email],
+#                           fail_silently=False
+#                           )
+#                 Account.objects.update(user=user, code=message_code)
+#                 return redirect(f"/password_reset/{user.id}/enter_code")
+#             raise serializers.ValidationError({email: "неверная почта"})
+
+
+class PasswordResetAPIView(generics.GenericAPIView):
+    serializer_class = EmailSerializer
+    queryset = User.objects.all()
+
+    def post(self, request, *args, **kwargs):
+        serializer = EmailSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data.get("email")
+            user = User.objects.filter(email=email).first()
+            if user:
+                message_code = generate_code()
+                send_mail('Код подтверждения',
+                          message_code,
+                          settings.EMAIL_HOST_USER,
+                          [email],
+                          fail_silently=False
+                          )
+                Account.objects.update(user=user, code=message_code)
+                return redirect(f"/password_reset/{user.id}/enter_code")
+            raise serializers.ValidationError({email: "неверная почта"})
+
