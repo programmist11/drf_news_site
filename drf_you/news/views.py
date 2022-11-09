@@ -80,25 +80,6 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAdminUser]
 
 
-class LoginAPIView(views.APIView):
-
-    def post(self, request):
-        serializer = UserLoginSerializer(data=request.data)
-
-        if serializer.is_valid():
-            username = serializer.validated_data.get("username")
-            password = serializer.validated_data.get("password")
-
-            user = User.objects.filter(Q(username=username) | Q(email=username)).first()
-            if user:
-                if not user.check_password(password):
-                    raise serializers.ValidationError({password: "Неверный пароль"})
-                else:
-                    login(request, user)
-                    return redirect("/")
-            raise serializers.ValidationError({username: "Неверное имя пользователя или пароль"})
-
-
 class LogoutAPIView(views.APIView):
 
     def get(self, request):
@@ -129,6 +110,27 @@ def generate_code():
 #                 Account.objects.update(user=user, code=message_code)
 #                 return redirect(f"/password_reset/{user.id}/enter_code")
 #             raise serializers.ValidationError({email: "неверная почта"})
+
+
+class LoginAPIView(generics.GenericAPIView):
+    serializer_class = UserLoginSerializer
+    queryset = User.objects.all()
+
+    def post(self, request, *args, **kwargs):
+        serializer = UserLoginSerializer(data=request.data)
+
+        if serializer.is_valid():
+            username = serializer.validated_data.get("username")
+            password = serializer.validated_data.get("password")
+
+            user = User.objects.filter(Q(username=username) | Q(email=username)).first()
+            if user:
+                if not user.check_password(password):
+                    raise serializers.ValidationError({password: "Неверный пароль"})
+                else:
+                    login(request, user)
+                    return redirect("/")
+            raise serializers.ValidationError({username: "Неверное имя пользователя или пароль"})
 
 
 class PasswordResetAPIView(generics.GenericAPIView):

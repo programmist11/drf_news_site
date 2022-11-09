@@ -74,14 +74,13 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class UserLoginSerializer(serializers.Serializer):
-    password = serializers.CharField(
-        label="Пароль",
-        style={'input_type': 'password'}
-    )
-
     username = serializers.CharField(
         label="Имя пользователя",
         max_length=20,
+    )
+    password = serializers.CharField(
+        label="Пароль",
+        style={'input_type': 'password'}
     )
 
 
