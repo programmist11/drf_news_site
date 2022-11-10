@@ -8,23 +8,16 @@ from django.core.mail import send_mail
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from rest_framework import generics, permissions, serializers, views, viewsets
-from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.reverse import reverse
 
 from .models import Account, Category, Ip, News
+from .password_validation import validate_password
 from .permissions import ReadOnlyOrIsReconfirmed
 from .serializers import (EmailSerializer, NewsSerializer,
+                          PasswordResetEnterCodeSerializer,
                           RegisterEnterCodeSerializer, UserLoginSerializer,
                           UserRegisterSerializer, UserSerializer)
-
-
-@api_view(['GET'])
-def api_root(request, format=None):
-    return Response({
-        'register': reverse('register', request=request, format=format),
-    })
 
 
 class NewsViewSet(viewsets.ModelViewSet):
@@ -43,15 +36,28 @@ class RegisterAPIView(generics.CreateAPIView):
 
     def post(self, request, *args, **kwargs):
         serializer = UserRegisterSerializer(data=request.data)
-        data = {}
+
         if serializer.is_valid():
-            user = serializer.save()
+            email = serializer.validated_data.get('email')
+            username = serializer.validated_data.get('username')
+            password = serializer.validated_data.get('password')
+            password2 = serializer.validated_data.get('password2')
+
+            if User.objects.filter(email=email):
+                raise serializers.ValidationError({email: "Пользователь с таким email уже существует"})
+            if password != password2:
+                raise serializers.ValidationError({password: "Пароль не совпадает"})
+
+            validate_password(password)
+            user = User(email=email, username=username)
+            message_code = send_code(email)
+            user.set_password(password)
+            user.save()
+            Account.objects.create(user=user, code=message_code)
 
             login(request, user)
             return redirect(f"/register/{user.id}/enter_code")
-        else:
-            data = serializer.errors
-            return Response(data)
+        return Response(serializer.errors)
 
 
 class RegisterEnterCodeAPIView(generics.CreateAPIView):
@@ -74,9 +80,7 @@ class RegisterEnterCodeAPIView(generics.CreateAPIView):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows users to be viewed or edited.
-    """
+
     queryset = User.objects.all().order_by('-date_joined')
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAdminUser]
@@ -87,28 +91,6 @@ class LogoutAPIView(views.APIView):
     def get(self, request):
         logout(request)
         return redirect("/")
-
-
-
-
-# class PasswordResetAPIView(views.APIView):
-#
-#     def post(self, request):
-#         serializer = EmailSerializer(data=request.data)
-#         if serializer.is_valid():
-#             email = serializer.validated_data.get("email")
-#             user = User.objects.filter(email=email).first()
-#             if user:
-#                 message_code = generate_code()
-#                 send_mail('Код подтверждения',
-#                           message_code,
-#                           settings.EMAIL_HOST_USER,
-#                           [email],
-#                           fail_silently=False
-#                           )
-#                 Account.objects.update(user=user, code=message_code)
-#                 return redirect(f"/password_reset/{user.id}/enter_code")
-#             raise serializers.ValidationError({email: "неверная почта"})
 
 
 class LoginAPIView(generics.GenericAPIView):
@@ -135,7 +117,6 @@ class LoginAPIView(generics.GenericAPIView):
 class PasswordResetAPIView(generics.GenericAPIView):
     serializer_class = EmailSerializer
     queryset = User.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         serializer = EmailSerializer(data=request.data)
@@ -154,9 +135,37 @@ class PasswordResetAPIView(generics.GenericAPIView):
             raise serializers.ValidationError({email: "неверная почта"})
 
 
+class PasswordResetEnterCodeAPIView(generics.GenericAPIView):
+    serializer_class = PasswordResetEnterCodeSerializer
+    queryset = User.objects.all()
+
+    def post(self, request, *args, **kwargs):
+        serializer = PasswordResetEnterCodeSerializer(data=request.data)
+
+        if serializer.is_valid():
+            password = serializer.validated_data.get('password')
+            password2 = serializer.validated_data.get('password2')
+            code_request = serializer.validated_data.get("code")
+            user_id = kwargs.get('user_id')
+            if password == password2:
+                user = User.objects.filter(pk=user_id).first()
+                if user:
+                    code_response = user.account.code
+                    if code_response == code_request:
+                        validate_password(password)
+                        user.set_password(password)
+                        user.save()
+                        login(request, user)
+                        return redirect("/")
+                    raise serializers.ValidationError({"code": "Неверный код"})
+                raise serializers.ValidationError({"username": "Пользователь не найден"})
+            raise serializers.ValidationError({"password": "Пароли не совпадают"})
+        return Response(serializer.errors)
+
 
 def send_code(email, massage='Код подтверждения'):
-    message_code = generate_code()
+    random.seed()
+    message_code = str(random.randint(10000, 99999))
     send_mail(massage,
               message_code,
               settings.EMAIL_HOST_USER,
@@ -165,6 +174,3 @@ def send_code(email, massage='Код подтверждения'):
               )
     return message_code
 
-def generate_code():
-    random.seed()
-    return str(random.randint(10000, 99999))

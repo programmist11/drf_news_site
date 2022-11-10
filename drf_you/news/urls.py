@@ -14,5 +14,6 @@ urlpatterns = [
     path('register/<int:user_id>/enter_code', views.RegisterEnterCodeAPIView.as_view(), name="register_id_enter_code"),
     path('login/', views.LoginAPIView.as_view(), name="login"),
     path('logout/', views.LogoutAPIView.as_view(), name="logout"),
-    path('password_reset', views.PasswordResetAPIView.as_view(), name="password_reset")
+    path('password_reset', views.PasswordResetAPIView.as_view(), name="password_reset"),
+    path('password_reset/<int:user_id>/enter_code', views.PasswordResetEnterCodeAPIView.as_view(), name="password_reset_enter_code"),
 ]

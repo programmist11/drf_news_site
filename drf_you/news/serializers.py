@@ -1,12 +1,10 @@
 import random
+from abc import ABC
 
-from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.mail import send_mail
 from rest_framework import serializers
 
 from .models import Account, News
-from .password_validation import validate_password
 
 
 def generate_code():
@@ -35,31 +33,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'email', "password", "password2"]
-
-    def save(self, *args, **kwargs):
-        email = self.validated_data['email']
-        username = self.validated_data['username']
-        password = self.validated_data['password']
-        password2 = self.validated_data['password2']
-        if User.objects.filter(email=email):
-            raise serializers.ValidationError({email: "Пользователь с таким email уже существует"})
-        if password != password2:
-            raise serializers.ValidationError({password: "Пароль не совпадает"})
-
-        validate_password(password)
-        user = User(email=email, username=username)
-        message = generate_code()
-        send_mail('Код подтверждения',
-                  message,
-                  settings.EMAIL_HOST_USER,
-                  [email],
-                  fail_silently=False
-                  )
-        user.set_password(password)
-        user.save()
-        Account.objects.create(user=User.objects.last(), code=message)
-        return user
+        fields = ['username', 'email', 'password', 'password2']
 
 
 class RegisterEnterCodeSerializer(serializers.Serializer):
@@ -85,6 +59,22 @@ class UserLoginSerializer(serializers.Serializer):
 
 class EmailSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
+
+class PasswordResetEnterCodeSerializer(serializers.Serializer):
+    code = serializers.CharField(
+        max_length=5,
+        label="Код",
+    )
+    password = serializers.CharField(
+        label="Пароль",
+        style={'input_type': 'password'}
+    )
+    password2 = serializers.CharField(
+        label="Пароль повторно",
+        style={'input_type': 'password'}
+    )
+
 
 
 
